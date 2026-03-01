@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DropIO - Wireless Transfer</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0a0a0f">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --color-bg: #0a0a0f;
+            --color-surface: #12121a;
+            --color-surface2: #1a1a26;
+            --color-surface3: #22222e;
+            --color-border: #2a2a3a;
+            --color-accent: #7c5cfc;
+            --color-accent2: #5c8cfc;
+            --color-accent-glow: rgba(124, 92, 252, 0.3);
+            --color-green: #34d399;
+            --color-red: #f87171;
+            --color-orange: #fb923c;
+            --color-text: #e8e8f0;
+            --color-text2: #9898b0;
+            --color-text3: #5e5e78;
+        }
+
+        html, body, #root { height: 100%; margin: 0; padding: 0; }
+        body {
+            background: var(--color-bg);
+            color: var(--color-text);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            overscroll-behavior: none;
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 4px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse-ring { 0% { transform: scale(0.95); opacity: 0.7; } 50% { transform: scale(1.05); opacity: 0.3; } 100% { transform: scale(0.95); opacity: 0.7; } }
+        @keyframes float { 0%%, 100%% { transform: translateY(0); } 50%% { transform: translateY(-6px); } }
+        @keyframes recording-pulse { 0%%, 100%% { opacity: 1; } 50%% { opacity: 0.4; } }
+
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        .animate-slide-up { animation: slideUp 0.4s ease-out; }
+        .animate-pulse-ring { animation: pulse-ring 2s ease-in-out infinite; }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+        .animate-recording { animation: recording-pulse 1s ease-in-out infinite; }
+
+        .glass { background: rgba(18, 18, 26, 0.7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--color-border); }
+        .glass-strong { background: rgba(18, 18, 26, 0.9); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid var(--color-border); }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--color-accent), var(--color-accent2));
+            color: white; font-weight: 600; border-radius: 14px; padding: 12px 24px;
+            transition: all 0.2s; box-shadow: 0 4px 20px var(--color-accent-glow);
+        }
+        .btn-primary:active { transform: translateY(1px); }
+
+        .glow-border { box-shadow: 0 0 0 1px var(--color-border), 0 0 20px -4px var(--color-accent-glow); }
+        .msg-bubble-me { background: linear-gradient(135deg, var(--color-accent), var(--color-accent2)); border-radius: 18px 18px 4px 18px; }
+        .msg-bubble-peer { background: var(--color-surface2); border: 1px solid var(--color-border); border-radius: 18px 18px 18px 4px; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback, createContext, useContext } = React;
+
+        // --- UTILS & CONSTANTS ---
+        const PEER_PREFIX = 'dropio-v2-';
+        const PROGRESS_MS = 100;
+        const STUN_SERVERS = [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' }
+        ];
+        const uid = () => Math.random().toString(36).slice(2, 11) + Date.now().toString(36);
+        const fmtSize = (b) => {
+            if (b < 1024) return `${b} B`;
+            if (b < 1048576) return `${(b / 1024).toFixed(1)} KB`;
+            return `${(b / 1048576).toFixed(1)} MB`;
+        };
+
+        // --- PEER CONTEXT ---
+        const PeerContext = createContext(null);
+        function PeerProvider({ children }) {
+            const [myCode, setMyCode] = useState('');
+            const [isConnected, setIsConnected] = useState(false);
+            const [isWaiting, setIsWaiting] = useState(false);
+            const [isConnecting, setIsConnecting] = useState(false);
+            const [error, setError] = useState('');
+            const [messages, setMessages] = useState([]);
+            const [transfers, setTransfers] = useState([]);
+            const [callStatus, setCallStatus] = useState('idle');
+            const [callType, setCallType] = useState('voice');
+            const [localStream, setLocalStream] = useState(null);
+            const [remoteStream, setRemoteStream] = useState(null);
+
+            const peerRef = useRef(null);
+            const connRef = useRef(null);
+            const mediaConnRef = useRef(null);
+            const recvRef = useRef(null);
+            const queueRef = useRef([]);
+            const sendingRef = useRef(false);
+
+            const clearError = () => setError('');
+
+            const updateProgress = useCallback((id, progress, speed) => {
+                setTransfers(p => p.map(t => (t.id === id ? { ...t, progress, speed } : t)));
+            }, []);
+
+            const stopStream = (s) => s?.getTracks().forEach(t => t.stop());
+
+            const handleData = useCallback((data) => {
+                if (data instanceof ArrayBuffer || data instanceof Blob || data instanceof Uint8Array) {
+                    const r = recvRef.current;
+                    if (!r) return;
+                    let blob = data instanceof Blob ? data : new Blob([data]);
+                    r.parts.push(blob);
+                    r.received += blob.size;
+                    const prog = Math.min(r.received / r.size, 1);
+                    const speed = r.received / ((Date.now() - r.startTime) / 1000);
+                    updateProgress(r.id, prog, speed);
+                    return;
+                }
+
+                if (typeof data === 'object' && data !== null) {
+                    const m = data;
+                    if (m.t === 'chat') {
+                        setMessages(p => [...p, { id: m.id || uid(), text: m.text, sender: 'peer', timestamp: m.ts || Date.now(), type: m.msgType || 'text',
+                            audioUrl: m.audioData ? URL.createObjectURL(new Blob([Uint8Array.from(atob(m.audioData), c => c.charCodeAt(0))], {type:'audio/webm'})) : null,
+                            audioDuration: m.audioDuration
+                        }]);
+                    } else if (m.t === 'fs') {
+                        recvRef.current = { id: m.id, name: m.name, size: m.size, mime: m.mime, parts: [], received: 0, startTime: Date.now() };
+                        setTransfers(p => [...p, { id: m.id, name: m.name, size: m.size, progress: 0, speed: 0, status: 'receiving', direction: 'receive' }]);
+                    } else if (m.t === 'fe') {
+                        const r = recvRef.current;
+                        if (r && r.id === m.id) {
+                            const url = URL.createObjectURL(new Blob(r.parts, { type: r.mime }));
+                            setTransfers(p => p.map(t => t.id === r.id ? { ...t, status: 'complete', progress: 1, url } : t));
+                            recvRef.current = null;
+                        }
+                    } else if (m.t === 'call-req') {
+                        setCallType(m.callType);
+                        setCallStatus('incoming');
+                    } else if (m.t === 'call-accept') {
+                        setCallStatus('active');
+                    } else if (m.t === 'call-end') {
+                        setCallStatus('idle'); setLocalStream(null); setRemoteStream(null);
+                    }
+                }
+            }, [updateProgress]);
+
+            const setupPeer = (peer) => {
+                peer.on('open', (id) => {
+                    const code = id.replace(PEER_PREFIX, '');
+                    setMyCode(code);
+                });
+                peer.on('connection', (c) => {
+                    connRef.current = c;
+                    c.on('open', () => setIsConnected(true));
+                    c.on('data', handleData);
+                    c.on('close', () => setIsConnected(false));
+                });
+                peer.on('call', (mc) => {
+                    mediaConnRef.current = mc;
+                    setCallType(mc.metadata?.callType || 'voice');
+                    setCallStatus('incoming');
+                });
+                peer.on('error', (e) => {
+                    setError(e.type === 'peer-unavailable' ? 'Room not found.' : e.message);
+                    setIsConnecting(false); setIsWaiting(false);
+                });
+            };
+
+            const createSession = () => {
+                setIsWaiting(true);
+                const code = Math.random().toString(36).slice(2, 5);
+                const peer = new Peer(PEER_PREFIX + code, { config: { iceServers: STUN_SERVERS } });
+                peerRef.current = peer;
+                setupPeer(peer);
+            };
+
+            const joinSession = (code) => {
+                setIsConnecting(true);
+                const peer = new Peer({ config: { iceServers: STUN_SERVERS } });
+                peerRef.current = peer;
+                peer.on('open', () => {
+                    const conn = peer.connect(PEER_PREFIX + code.toLowerCase(), { reliable: true });
+                    connRef.current = conn;
+                    conn.on('open', () => { setIsConnected(true); setIsConnecting(false); });
+                    conn.on('data', handleData);
+                });
+                setupPeer(peer);
+            };
+
+            const sendMessage = (text) => {
+                if (!connRef.current?.open) return;
+                const msg = { id: uid(), text, sender: 'me', timestamp: Date.now() };
+                connRef.current.send({ t: 'chat', ...msg });
+                setMessages(p => [...p, msg]);
+            };
+
+            const sendFile = async (file) => {
+                if (!connRef.current?.open) return;
+                const id = uid();
+                setTransfers(p => [...p, { id, name: file.name, size: file.size, progress: 0, speed: 0, status: 'sending', direction: 'send' }]);
+                
+                const conn = connRef.current;
+                conn.send({ t: 'fs', id, name: file.name, size: file.size, mime: file.type });
+                
+                const chunkSize = 64 * 1024;
+                for (let offset = 0; offset < file.size; offset += chunkSize) {
+                    const chunk = await file.slice(offset, offset + chunkSize).arrayBuffer();
+                    conn.send(chunk);
+                    updateProgress(id, offset / file.size, 0); // speed calc simplified
+                }
+                conn.send({ t: 'fe', id });
+                setTransfers(p => p.map(t => t.id === id ? { ...t, status: 'complete', progress: 1 } : t));
+            };
+
+            const startCall = async (type) => {
+                setCallType(type); setCallStatus('calling');
+                connRef.current?.send({ t: 'call-req', callType: type });
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: type === 'video' });
+                    setLocalStream(stream);
+                    const mc = peerRef.current.call(connRef.current.peer, stream, { metadata: { callType: type } });
+                    mediaConnRef.current = mc;
+                    mc.on('stream', (rs) => { setRemoteStream(rs); setCallStatus('active'); });
+                } catch { setCallStatus('idle'); }
+            };
+
+            const acceptCall = async () => {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: callType === 'video' });
+                    setLocalStream(stream);
+                    mediaConnRef.current.answer(stream);
+                    mediaConnRef.current.on('stream', (rs) => { setRemoteStream(rs); setCallStatus('active'); });
+                    connRef.current?.send({ t: 'call-accept' });
+                } catch { setCallStatus('idle'); }
+            };
+
+            const endCall = () => {
+                mediaConnRef.current?.close();
+                stopStream(localStream);
+                setCallStatus('idle');
+                connRef.current?.send({ t: 'call-end' });
+            };
+
+            const disconnect = () => {
+                peerRef.current?.destroy();
+                setIsConnected(false); setMyCode(''); setMessages([]); setTransfers([]);
+            };
+
+            return (
+                <PeerContext.Provider value={{
+                    myCode, isConnected, isWaiting, isConnecting, error, messages, transfers, callStatus, callType, localStream, remoteStream,
+                    createSession, joinSession, sendMessage, sendFile, disconnect, clearError, startCall, acceptCall, endCall
+                }}>
+                    {children}
+                </PeerContext.Provider>
+            );
+        }
+        const usePeer = () => useContext(PeerContext);
+
+        // --- COMPONENTS ---
+        function PairScreen() {
+            const { createSession, joinSession, myCode, isConnecting, error, clearError } = usePeer();
+            const [mode, setMode] = useState('pick');
+            const [code, setCode] = useState(['','','']);
+            const inputs = useRef([]);
+
+            const handleInput = (i, v) => {
+                const char = v.toLowerCase().slice(-1);
+                const next = [...code]; next[i] = char; setCode(next);
+                if (char && i < 2) inputs.current[i+1].focus();
+                if (i === 2 && char) joinSession(next.join(''));
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+                    <div className="mb-8">
+                        <div className="w-16 h-16 bg-gradient-to-br from-[#7c5cfc] to-[#5c8cfc] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg"><i data-lucide="zap"></i></div>
+                        <h1 className="text-3xl font-bold">DropIO</h1>
+                        <p className="text-gray-500 text-sm">P2P File Transfer & Chat</p>
+                    </div>
+
+                    {error && <div className="mb-4 text-red-400 bg-red-400/10 p-3 rounded-lg text-sm">{error}</div>}
+
+                    {mode === 'pick' && <div className="space-y-3 w-full max-w-xs">
+                        <button onClick={() => { setMode('create'); createSession(); }} className="w-full glass p-5 rounded-2xl flex items-center gap-4 hover:border-purple-500/50 transition-all">
+                            <div className="w-10 h-10 bg-purple-500 rounded-xl flex items-center justify-center"><i data-lucide="wifi"></i></div>
+                            <div className="text-left"><div className="font-bold">Create Room</div><div className="text-xs text-gray-500">Host a session</div></div>
+                        </button>
+                        <button onClick={() => setMode('join')} className="w-full glass p-5 rounded-2xl flex items-center gap-4 hover:border-blue-500/50 transition-all">
+                            <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center"><i data-lucide="arrow-right"></i></div>
+                            <div className="text-left"><div className="font-bold">Join Room</div><div className="text-xs text-gray-500">Enter a code</div></div>
+                        </button>
+                    </div>}
+
+                    {mode === 'create' && <div className="glass p-8 rounded-2xl w-full max-w-xs">
+                        {!myCode ? <div>Creating...</div> : <>
+                            <p className="text-xs text-gray-500 uppercase mb-4">Your Code</p>
+                            <div className="flex justify-center gap-2 mb-6">
+                                {myCode.split('').map((c,i) => <div key={i} className="w-12 h-16 bg-gray-800 rounded-xl flex items-center justify-center text-2xl font-bold border border-gray-700">{c.toUpperCase()}</div>)}
+                            </div>
+                            <button onClick={() => navigator.clipboard.writeText(myCode.toUpperCase())} className="btn-primary w-full py-3">Copy Code</button>
+                        </>}
+                    </div>}
+
+                    {mode === 'join' && <div className="glass p-8 rounded-2xl w-full max-w-xs text-center">
+                        <p className="text-xs text-gray-500 uppercase mb-4">Enter Code</p>
+                        <div className="flex justify-center gap-2">
+                            {[0,1,2].map(i => <input key={i} ref={el => inputs.current[i] = el} className="w-12 h-16 bg-gray-800 rounded-xl text-center text-2xl font-bold border border-gray-700 outline-none focus:border-blue-500" maxLength={1} value={code[i]} onChange={e => handleInput(i, e.target.value)} />)}
+                        </div>
+                    </div>}
+                    {mode !== 'pick' && <button onClick={() => setMode('pick')} className="mt-6 text-gray-500 text-sm">Cancel</button>}
+                </div>
+            );
+        }
+
+        function ChatView() {
+            const { messages, sendMessage } = usePeer();
+            const [text, setText] = useState('');
+            const bottom = useRef();
+            useEffect(() => bottom.current?.scrollIntoView({ behavior: 'smooth' }), [messages]);
+
+            return (
+                <div className="flex flex-col h-full">
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                        {messages.map((m, i) => (
+                            <div key={i} className={`flex ${m.sender === 'me' ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${m.sender === 'me' ? 'msg-bubble-me text-white' : 'msg-bubble-peer'}`}>
+                                    {m.text}
+                                </div>
+                            </div>
+                        ))}
+                        <div ref={bottom} />
+                    </div>
+                    <div className="p-3 bg-[#12121a]">
+                        <div className="glass rounded-xl flex items-center px-3 py-1 gap-2">
+                            <input className="flex-1 bg-transparent py-2 outline-none text-sm" placeholder="Type..." value={text} onChange={e => setText(e.target.value)} onKeyDown={e => e.key === 'Enter' && (sendMessage(text), setText(''))} />
+                            <button onClick={() => { sendMessage(text); setText(''); }} className="text-purple-400 p-2"><i data-lucide="send"></i></button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function FileView() {
+            const { transfers, sendFile } = usePeer();
+            const input = useRef();
+            return (
+                <div className="flex flex-col h-full p-4">
+                    <input type="file" ref={input} className="hidden" multiple onChange={e => Array.from(e.target.files).forEach(sendFile)} />
+                    <button onClick={() => input.current.click()} className="dashed-border glass p-8 rounded-2xl flex flex-col items-center gap-2 mb-4 border-2 border-dashed border-gray-700">
+                        <i data-lucide="upload"></i>
+                        <div className="text-sm font-bold text-gray-400">Add Files</div>
+                    </button>
+                    <div className="space-y-2 overflow-y-auto">
+                        {transfers.map(t => (
+                            <div key={t.id} className="glass p-3 rounded-xl flex items-center gap-3">
+                                <div className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center"><i data-lucide="file"></i></div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-xs font-bold truncate">{t.name}</div>
+                                    <div className="text-[10px] text-gray-500">{fmtSize(t.size)} • {t.status}</div>
+                                    {t.status !== 'complete' && <div className="h-1 bg-gray-700 rounded-full mt-1"><div className="h-full bg-purple-500 rounded-full" style={{width: `${t.progress*100}%`}}></div></div>}
+                                </div>
+                                {t.url && <a href={t.url} download={t.name} className="p-2 text-green-400"><i data-lucide="download"></i></a>}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        function CallOverlay() {
+            const { callStatus, callType, localStream, remoteStream, endCall, acceptCall } = usePeer();
+            const remoteVideo = useRef();
+            const localVideo = useRef();
+            useEffect(() => { if (remoteVideo.current) remoteVideo.current.srcObject = remoteStream; }, [remoteStream]);
+            useEffect(() => { if (localVideo.current) localVideo.current.srcObject = localStream; }, [localStream]);
+            if (callStatus === 'idle') return null;
+            return (
+                <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-6 text-white text-center">
+                    <div className="flex-1 flex flex-col items-center justify-center relative w-full h-full">
+                        {callType === 'video' && callStatus === 'active' ? (
+                            <div className="w-full h-full relative">
+                                <video ref={remoteVideo} autoPlay class="w-full h-full object-cover rounded-3xl" />
+                                <video ref={localVideo} autoPlay muted class="absolute top-4 right-4 w-32 h-48 object-cover rounded-2xl border-2 border-white/20" />
+                            </div>
+                        ) : (
+                            <div className="w-24 h-24 bg-purple-500 rounded-full flex items-center justify-center animate-pulse mb-4"><i data-lucide="phone"></i></div>
+                        )}
+                        <h2 className="text-xl font-bold">{callStatus === 'incoming' ? 'Incoming Call' : 'Call in Progress'}</h2>
+                    </div>
+                    <div className="flex gap-4 pb-10">
+                        {callStatus === 'incoming' ? (
+                            <button onClick={acceptCall} className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center"><i data-lucide="phone"></i></button>
+                        ) : null}
+                        <button onClick={endCall} className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center"><i data-lucide="phone-off"></i></button>
+                    </div>
+                </div>
+            );
+        }
+
+        function App() {
+            const { isConnected, disconnect, myCode, startCall, callStatus } = usePeer();
+            const [tab, setTab] = useState('chat');
+
+            if (!isConnected) return <PairScreen />;
+
+            return (
+                <div className="flex flex-col h-screen max-h-screen overflow-hidden">
+                    <CallOverlay />
+                    <div className="header p-4 glass-strong flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center font-bold text-white text-xs">D</div>
+                            <div className="text-left font-bold text-sm">DropIO<div className="text-[10px] text-green-400">Connected: {myCode.toUpperCase()}</div></div>
+                        </div>
+                        <div className="flex gap-2">
+                           <button onClick={() => startCall('voice')} className="p-2 text-gray-400 hover:text-white"><i data-lucide="phone"></i></button>
+                           <button onClick={() => startCall('video')} className="p-2 text-gray-400 hover:text-white"><i data-lucide="video"></i></button>
+                           <button onClick={disconnect} className="p-2 text-red-400"><i data-lucide="log-out"></i></button>
+                        </div>
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                        {tab === 'chat' ? <ChatView /> : <FileView />}
+                    </div>
+                    <div className="tab-bar glass-strong flex border-t border-gray-800">
+                        <button onClick={() => setTab('chat')} className={`flex-1 p-3 flex flex-col items-center gap-1 ${tab === 'chat' ? 'text-purple-400' : 'text-gray-500'}`}><i data-lucide="message-square"></i><span className="text-[10px]">Chat</span></button>
+                        <button onClick={() => setTab('files')} className={`flex-1 p-3 flex flex-col items-center gap-1 ${tab === 'files' ? 'text-purple-400' : 'text-gray-500'}`}><i data-lucide="folder-up"></i><span className="text-[10px]">Files</span></button>
+                    </div>
+                </div>
+            );
+        }
+
+        const container = document.getElementById('root');
+        const root = ReactDOM.createRoot(container);
+        root.render(<PeerProvider><App /></PeerProvider>);
+
+        // Initialize Lucide icons
+        setTimeout(() => {
+          lucide.createIcons();
+          // Custom observer for dynamic content
+          const observer = new MutationObserver(() => lucide.createIcons());
+          observer.observe(document.body, { childList: true, subtree: true });
+        }, 100);
+    </script>
+</body>
+</html>
