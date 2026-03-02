@@ -1,6 +1,6 @@
 {
-  "name": "dropio",
-  "short_name": "dropio",
+  "name": "DropIO",
+  "short_name": "DropIO",
   "description": "Futuristic peer-to-peer sharing and communication.",
   "start_url": "./index.html",
   "display": "standalone",
