@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dropio-v1';
+const CACHE_NAME = 'DropIO-v1';
 const ASSETS = [
   './',
   './index.html',
