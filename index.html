@@ -48,6 +48,39 @@
             font-size: 0.95rem;
             line-height: 1.4;
             animation: slideUp 0.3s ease-out;
+            /* Added for Copy Interaction */
+            cursor: pointer;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        #custom-context-menu {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            background: #262626;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            min-width: 120px;
+        }
+        
+        .context-menu-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-radius: 8px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+        }
+        
+        .context-menu-item:hover {
+            background: rgba(255, 255, 255, 0.1);
         }
 
         @keyframes slideUp {
@@ -183,7 +216,7 @@
         <!-- Chat History -->
         <div id="messages" class="flex-1 overflow-y-auto p-8 space-y-6 flex flex-col scroll-smooth">
             <div class="flex justify-center py-2">
-                <span class="text-[9px] text-slate-600 uppercase tracking-[0.3em] font-black">Secure Channel Established</span>
+                <span class="text-[9px] text-slate-600 uppercase tracking-[0.3em] font-black"></span>
             </div>
         </div>
 
@@ -266,6 +299,14 @@
         </div>
     </div>
 
+    <!-- Custom Context Menu for Copy -->
+    <div id="custom-context-menu">
+        <div class="context-menu-item" id="copy-text-btn">
+            <i class="fa-solid fa-copy"></i>
+            <span>Copy Text</span>
+        </div>
+    </div>
+
     <script>
         const PEER_PREFIX = 'DropIO-p2p-';
         const CHUNK_SIZE = 64 * 1024;
@@ -295,8 +336,62 @@
             tMic: el('toggle-mic'), tVid: el('toggle-video'),
             incDialog: el('incoming-call-dialog'), callerId: el('caller-id'),
             acceptCall: el('accept-call'), declineCall: el('decline-call'),
-            
         };
+
+        // Context Menu & Copy Logic
+        const contextMenu = document.getElementById('custom-context-menu');
+        const copyBtn = document.getElementById('copy-text-btn');
+        let selectedMessageText = "";
+
+        function showContextMenu(x, y, text) {
+            selectedMessageText = text;
+            contextMenu.style.top = `${y}px`;
+            contextMenu.style.left = `${x}px`;
+            contextMenu.style.display = 'block';
+        }
+
+        function hideContextMenu() {
+            contextMenu.style.display = 'none';
+        }
+
+        function setupMessageCopy(bubble) {
+            let pressTimer;
+
+            // Simple Right Click (Desktop)
+            bubble.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showContextMenu(e.clientX, e.clientY, bubble.innerText);
+            });
+            
+            // Left Click (Desktop)
+            bubble.addEventListener('click', (e) => {
+                if (window.innerWidth > 768) { // Only force left-click copy menu on desktop/wider screens
+                    e.preventDefault();
+                    showContextMenu(e.clientX, e.clientY, bubble.innerText);
+                }
+            });
+
+            // Long Press (Mobile)
+            bubble.addEventListener('touchstart', (e) => {
+                pressTimer = window.setTimeout(() => {
+                    const touch = e.touches[0];
+                    showContextMenu(touch.clientX, touch.clientY, bubble.innerText);
+                }, 600);
+            }, {passive: true});
+
+            bubble.addEventListener('touchend', () => clearTimeout(pressTimer));
+            bubble.addEventListener('touchmove', () => clearTimeout(pressTimer));
+        }
+
+        copyBtn.onclick = () => {
+            navigator.clipboard.writeText(selectedMessageText).then(() => {
+                hideContextMenu();
+            });
+        };
+
+        window.addEventListener('click', (e) => {
+            if (!contextMenu.contains(e.target)) hideContextMenu();
+        });
 
         // UI Logic
         function setProgress(perc) {
@@ -315,6 +410,7 @@
             div.innerHTML = content;
             elements.msgDiv.appendChild(div);
             elements.msgDiv.scrollTo({ top: elements.msgDiv.scrollHeight, behavior: 'smooth' });
+            setupMessageCopy(div); // Attach copy logic
         }
 
         
