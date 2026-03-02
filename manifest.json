@@ -1,0 +1,16 @@
+{
+  "name": "dropio",
+  "short_name": "dropio",
+  "description": "Futuristic peer-to-peer sharing and communication.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#06b6d4",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/5968/5968756.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
