@@ -11,6 +11,7 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
         
+        
         :root {
             --accent: #2563eb;
             --bg: #0a0a0a;
@@ -18,6 +19,98 @@
             --border: rgba(255, 255, 255, 0.1);
             --text-main: #f8fafc;
         }
+
+        
+        
+        body.light-mode {
+            --bg: #ffffff;
+            --surface: #ffffff;
+            --border: #e2e8f0;
+            --text-main: #0f172a;
+            --accent: #2563eb;
+        }
+        
+        /* Message Bubbles */
+        body.light-mode .sent { background: #2563eb !important; color: #ffffff !important; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); }
+        body.light-mode .received { background: #f1f5f9; color: #0f172a; border: 1px solid #e2e8f0; }
+        
+        
+        /* Premium Light Mode Redesign */
+        body.light-mode {
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --border: rgba(0, 0, 0, 0.06);
+            --text-main: #1e293b;
+            --accent: #2563eb;
+        }
+        
+        body.light-mode .sent { 
+            background: linear-gradient(135deg, #3b82f6, #2563eb) !important; 
+            color: #ffffff !important; 
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); 
+        }
+        
+        body.light-mode .received { 
+            background: #ffffff !important; 
+            color: #1e293b !important; 
+            border: 1px solid #e2e8f0; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        
+        body.light-mode header { 
+            background: rgba(255, 255, 255, 0.8) !important; 
+            border-bottom: 1px solid #f1f5f9 !important; 
+            backdrop-filter: blur(10px);
+        }
+        
+        body.light-mode footer .bg-slate-900\/40 { 
+            background: #f8fafc !important; 
+            border: 1px solid #e2e8f0 !important; 
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+        
+        body.light-mode #theme-toggle, 
+        body.light-mode #call-audio-btn, 
+        body.light-mode #call-video-btn { 
+            background: #f1f5f9 !important; 
+            color: #64748b !important; 
+        }
+        
+        body.light-mode #theme-toggle:hover { background: #fefce8 !important; color: #eab308 !important; }
+        body.light-mode #call-audio-btn:hover, body.light-mode #call-video-btn:hover { background: #eff6ff !important; color: #2563eb !important; }
+
+        body.light-mode #chat-input { color: #1e293b !important; }
+
+        /* Setup Screen Light Mode */
+        body.light-mode #setup-screen .bg-slate-900\/40 { 
+            background: #ffffff !important; 
+            border: 1px solid #e2e8f0 !important; 
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05); 
+        }
+        body.light-mode #peer-id-input { 
+            background: #f1f5f9 !important; 
+            border: 1px solid #e2e8f0 !important; 
+            color: #1e293b !important; 
+        }
+
+        
+        /* Context Menu */
+        #custom-context-menu {
+            min-width: 180px !important;
+            background: #1f2937 !important;
+            border: 1px solid #374151 !important;
+            border-radius: 12px !important;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1) !important;
+            touch-action: none;
+        }
+        body.light-mode #custom-context-menu { background: rgba(255, 255, 255, 0.95) !important; border: 1px solid #e2e8f0 !important; box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important; color: #1e293b !important; }
+
+        body.light-mode #custom-context-menu { background: rgba(255, 255, 255, 0.95) !important; border: 1px solid #e2e8f0 !important; box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important; color: #1e293b !important; }
+        body.light-mode .context-menu-item { color: #0f172a; }
+        body.light-mode .context-menu-item:hover { background: #f1f5f9; color: #2563eb; }
+
+
+
 
         body {
             font-family: 'Inter', sans-serif;
@@ -58,30 +151,30 @@
         #custom-context-menu {
             display: none;
             position: fixed;
-            z-index: 1000;
-            background: #262626;
+            z-index: 10000;
+            background: rgba(30, 30, 30, 0.95);
+            backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 8px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            min-width: 120px;
+            border-radius: 16px;
+            padding: 6px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            min-width: 160px;
+            opacity: 0;
+            transition: opacity 0.1s ease;
         }
-        
         .context-menu-item {
-            padding: 10px 15px;
+            padding: 10px 14px;
             cursor: pointer;
-            transition: background 0.2s;
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 14px;
             display: flex;
             align-items: center;
             gap: 10px;
             color: white;
+            font-weight: 500;
         }
-        
-        .context-menu-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
+        .context-menu-item:hover { background: rgba(255, 255, 255, 0.1); }
+        .context_img_preview { max-width: 100%; max-height: 200px; border-radius: 10px; margin-bottom: 8px; }
 
         @keyframes slideUp {
             from { opacity: 0; transform: translateY(10px); }
@@ -91,6 +184,48 @@
         .file-prog-bg { width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-top: 8px; overflow: hidden; }
         .file-prog-fill { height: 100%; background: #fff; width: 0%; transition: width 0.1s linear; }
         .sent { background: var(--accent); color: white; margin-left: auto; border-bottom-right-radius: 0.25rem; }
+        
+        .voice-player {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 16px;
+            border-radius: 100px;
+            min-width: 220px;
+            max-width: 280px;
+        }
+        .sent .voice-player { background: rgba(0, 0, 0, 0.15); }
+        .received .voice-player { background: var(--accent); }
+        
+        .play-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .waveform {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            height: 20px;
+        }
+        .wave-bar {
+            flex: 1;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 2px;
+            transition: height 0.2s ease;
+        }
+        .wave-bar.active { background: #fff; }
+        .duration { font-size: 10px; font-weight: 600; font-family: 'JetBrains Mono'; opacity: 0.8; min-width: 35px; }
+
         .received { background: #262626; color: white; margin-right: auto; border-bottom-left-radius: 0.25rem; }
 
         
@@ -197,16 +332,12 @@
                 <div class="w-12 h-12 bg-slate-800 rounded-2xl flex items-center justify-center text-blue-400 font-bold border border-white/5">
                     <span id="peer-initial" class="text-xl">?</span>
                 </div>
-                <div>
-                    <h2 class="font-bold text-lg tracking-tight" id="chat-with-id">Connected</h2>
-                    <div class="flex items-center gap-1.5">
-                        <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                        <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">End-to-End</span>
-                    </div>
-                </div>
+                <div><h2 class="font-bold text-lg tracking-tight" id="chat-with-id"></h2></div>
             </div>
             
             <div class="flex gap-3">
+                
+                <button id="theme-toggle" class="w-11 h-11 rounded-2xl bg-white/5 hover:bg-yellow-500/20 transition-all flex items-center justify-center text-slate-400 hover:text-yellow-500"><i class="fa-solid fa-moon"></i></button>
                 <button id="call-audio-btn" class="w-11 h-11 rounded-2xl bg-white/5 hover:bg-blue-600 transition-all flex items-center justify-center"><i class="fa-solid fa-phone text-sm"></i></button>
                 <button id="call-video-btn" class="w-11 h-11 rounded-2xl bg-white/5 hover:bg-blue-600 transition-all flex items-center justify-center"><i class="fa-solid fa-video text-sm"></i></button>
                 <button onclick="window.location.reload()" class="w-11 h-11 rounded-2xl bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-all flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
@@ -216,7 +347,7 @@
         <!-- Chat History -->
         <div id="messages" class="flex-1 overflow-y-auto p-8 space-y-6 flex flex-col scroll-smooth">
             <div class="flex justify-center py-2">
-                <span class="text-[9px] text-slate-600 uppercase tracking-[0.3em] font-black"></span>
+                
             </div>
         </div>
 
@@ -300,7 +431,7 @@
     </div>
 
     <!-- Custom Context Menu for Copy -->
-    <div id="custom-context-menu">
+    <div id="custom-context-menu" style="box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2);">
         <div class="context-menu-item" id="copy-text-btn">
             <i class="fa-solid fa-copy"></i>
             <span>Copy Text</span>
@@ -308,6 +439,84 @@
     </div>
 
     <script>
+        
+        // Theme Toggle Logic
+        const themeBtn = document.getElementById('theme-toggle');
+        const themeIcon = themeBtn.querySelector('i');
+        
+        themeBtn.onclick = () => {
+            document.body.classList.toggle('light-mode');
+            const isLight = document.body.classList.contains('light-mode');
+            themeIcon.className = isLight ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+            themeBtn.classList.toggle('text-yellow-500', isLight);
+        };
+
+        
+        function createVoiceUI(blobUrl) {
+            const id = 'v-' + Math.random().toString(36).substr(2, 9);
+            const html = `
+                <div class="voice-player" id="${id}">
+                    <div class="play-btn" onclick="toggleVoice('${id}', '${blobUrl}')">
+                        <i class="fa-solid fa-play text-[10px]"></i>
+                    </div>
+                    <div class="waveform">
+                        ${Array.from({length: 15}, () => `<div class="wave-bar" style="height: ${Math.random()*80 + 20}%"></div>`).join('')}
+                    </div>
+                    <div class="duration">0:00</div>
+                    <audio src="${blobUrl}" onloadedmetadata="setInitialDuration('${id}', this)" ontimeupdate="updateVoiceProgress('${id}', this)" onended="resetVoiceUI('${id}')" class="hidden"></audio>
+                </div>
+            `;
+            return html;
+        }
+
+        window.toggleVoice = (id, url) => {
+            const container = document.getElementById(id);
+            const audio = container.querySelector('audio');
+            const icon = container.querySelector('.play-btn i');
+            if (audio.paused) {
+                audio.play();
+                icon.className = 'fa-solid fa-pause text-[10px]';
+            } else {
+                audio.pause();
+                icon.className = 'fa-solid fa-play text-[10px]';
+            }
+        };
+
+        
+        window.updateVoiceProgress = (id, audio) => {
+            const container = document.getElementById(id);
+            if (!container) return;
+            const bars = container.querySelectorAll('.wave-bar');
+            const duration = audio.duration || 0;
+            const currentTime = audio.currentTime || 0;
+            
+            const progress = (currentTime / duration) * bars.length;
+            bars.forEach((bar, i) => {
+                bar.classList.toggle('active', i < progress);
+            });
+            
+            const timeToDisplay = audio.paused && currentTime === 0 ? duration : currentTime;
+            const mins = Math.floor(timeToDisplay / 60);
+            const secs = Math.floor(timeToDisplay % 60);
+            container.querySelector('.duration').innerText = `${mins}:${secs.toString().padStart(2, '0')}`;
+        };
+
+        window.setInitialDuration = (id, audio) => {
+            const container = document.getElementById(id);
+            if (!container) return;
+            const duration = audio.duration;
+            const mins = Math.floor(duration / 60);
+            const secs = Math.floor(duration % 60);
+            container.querySelector('.duration').innerText = `${mins}:${secs.toString().padStart(2, '0')}`;
+        };
+
+
+        window.resetVoiceUI = (id) => {
+            const container = document.getElementById(id);
+            container.querySelector('.play-btn i').className = 'fa-solid fa-play text-[10px]';
+            container.querySelectorAll('.wave-bar').forEach(b => b.classList.remove('active'));
+        };
+
         const PEER_PREFIX = 'DropIO-p2p-';
         const CHUNK_SIZE = 64 * 1024;
         const generateId = (l) => Array.from({length:l}, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');
@@ -338,60 +547,41 @@
             acceptCall: el('accept-call'), declineCall: el('decline-call'),
         };
 
-        // Context Menu & Copy Logic
+        // Context Menu (Fixed)
         const contextMenu = document.getElementById('custom-context-menu');
         const copyBtn = document.getElementById('copy-text-btn');
-        let selectedMessageText = "";
+        let selTxt = "";
 
-        function showContextMenu(x, y, text) {
-            selectedMessageText = text;
-            contextMenu.style.top = `${y}px`;
-            contextMenu.style.left = `${x}px`;
+        const showMenu = (x, y, txt) => {
+            selTxt = txt;
             contextMenu.style.display = 'block';
-        }
-
-        function hideContextMenu() {
-            contextMenu.style.display = 'none';
-        }
-
-        function setupMessageCopy(bubble) {
-            let pressTimer;
-
-            // Simple Right Click (Desktop)
-            bubble.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                showContextMenu(e.clientX, e.clientY, bubble.innerText);
-            });
-            
-            // Left Click (Desktop)
-            bubble.addEventListener('click', (e) => {
-                if (window.innerWidth > 768) { // Only force left-click copy menu on desktop/wider screens
-                    e.preventDefault();
-                    showContextMenu(e.clientX, e.clientY, bubble.innerText);
-                }
-            });
-
-            // Long Press (Mobile)
-            bubble.addEventListener('touchstart', (e) => {
-                pressTimer = window.setTimeout(() => {
-                    const touch = e.touches[0];
-                    showContextMenu(touch.clientX, touch.clientY, bubble.innerText);
-                }, 600);
-            }, {passive: true});
-
-            bubble.addEventListener('touchend', () => clearTimeout(pressTimer));
-            bubble.addEventListener('touchmove', () => clearTimeout(pressTimer));
-        }
-
-        copyBtn.onclick = () => {
-            navigator.clipboard.writeText(selectedMessageText).then(() => {
-                hideContextMenu();
-            });
+            setTimeout(() => {
+                const rect = contextMenu.getBoundingClientRect();
+                let fX = x, fY = y;
+                if (x + rect.width > window.innerWidth - 10) fX = window.innerWidth - rect.width - 10;
+                if (y + rect.height > window.innerHeight - 10) fY = window.innerHeight - rect.height - 10; if (fX < 10) fX = 10; if (fY < 10) fY = 10;
+                contextMenu.style.left = fX + 'px';
+                contextMenu.style.top = fY + 'px';
+                contextMenu.style.opacity = '1';
+            }, 10);
         };
 
-        window.addEventListener('click', (e) => {
-            if (!contextMenu.contains(e.target)) hideContextMenu();
+        const hideMenu = () => { contextMenu.style.opacity = '0'; setTimeout(() => contextMenu.style.display = 'none', 100); };
+
+        elements.msgDiv.addEventListener('contextmenu', e => {
+            const b = e.target.closest('.message-bubble');
+            if(b) { e.preventDefault(); showMenu(e.clientX, e.clientY, b.innerText); }
         });
+
+        let t;
+        elements.msgDiv.addEventListener('touchstart', e => {
+            const b = e.target.closest('.message-bubble');
+            if(b) t = setTimeout(() => showMenu(e.touches[0].clientX, e.touches[0].clientY, b.innerText), 600);
+        }, {passive: true});
+        elements.msgDiv.addEventListener('touchend', () => clearTimeout(t));
+
+        copyBtn.onclick = () => { navigator.clipboard.writeText(selTxt); hideMenu(); };
+        window.addEventListener('click', e => { if(!contextMenu.contains(e.target)) hideMenu(); });
 
         // UI Logic
         function setProgress(perc) {
@@ -410,7 +600,7 @@
             div.innerHTML = content;
             elements.msgDiv.appendChild(div);
             elements.msgDiv.scrollTo({ top: elements.msgDiv.scrollHeight, behavior: 'smooth' });
-            setupMessageCopy(div); // Attach copy logic
+            // Delegation handles copy
         }
 
         
@@ -455,7 +645,7 @@
                 elements.setup.classList.add('hidden');
                 elements.main.classList.remove('hidden');
                 const cleanId = conn.peer.replace(PEER_PREFIX, '');
-                elements.chatWith.innerText = `Peer: ${cleanId}`;
+                elements.chatWith.innerText = '';
                 elements.peerInit.innerText = cleanId[0];
             }, 500);
         }
@@ -470,39 +660,86 @@
                     appendMessage('remote', `
                         <div class="flex flex-col min-w-[180px]">
                             <div class="flex items-center gap-3">
-                                <i class="fa-solid fa-file-import opacity-70"></i>
+                                <i class="fa-solid fa-file-arrow-down opacity-70"></i>
                                 <span class="text-xs font-bold truncate">${data.name}</span>
                             </div>
-                            <div class="file-prog-bg"><div id="p-${data.msgId}" class="file-prog-fill !background-blue-500"></div></div>
+                            <div class="file-prog-bg"><div id="p-${data.msgId}" class="file-prog-fill bg-blue-500" style="width:0%"></div></div>
                         </div>`, data.msgId);
                 } else if (data.type === 'file-chunk') {
                     incomingFileBuffer.push(data.chunk);
-                    if (incomingFileBuffer.length % 5 === 0) {
-                        const prog = (incomingFileBuffer.length / incomingFileInfo.totalChunks) * 100;
-                        const pBar = document.getElementById('p-'+incomingFileInfo.msgId);
-                        if(pBar) pBar.style.width = prog + '%';
-                    }
-
+                    const prog = (incomingFileBuffer.length / incomingFileInfo.totalChunks) * 100;
+                    const pb = document.getElementById('p-' + incomingFileInfo.msgId);
+                    if (pb) pb.style.width = prog + '%';
                     if (incomingFileBuffer.length === incomingFileInfo.totalChunks) {
                         const blob = new Blob(incomingFileBuffer, { type: incomingFileInfo.mime });
                         const url = URL.createObjectURL(blob);
                         const bubble = document.getElementById(incomingFileInfo.msgId);
-                        if(bubble) {
+                        if (bubble) {
+                            const isImg = incomingFileInfo.mime.startsWith('image/');
                             bubble.innerHTML = `
-                                <div class="flex items-center gap-3">
-                                    <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400"><i class="fa-solid fa-download text-xs"></i></div>
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-[11px] font-bold truncate">${incomingFileInfo.name}</p>
-                                        <a href="${url}" download="${incomingFileInfo.name}" class="text-[10px] text-blue-400 font-black uppercase hover:underline">Download</a>
+                                <div class="flex flex-col gap-2">
+                                    ${isImg ? `<img src="${url}" class="context_img_preview" onclick="window.open('${url}')">` : ''}
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400"><i class="fa-solid fa-download text-xs"></i></div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-[11px] font-bold truncate">${incomingFileInfo.name}</p>
+                                            <a href="${url}" download="${incomingFileInfo.name}" target="_blank" class="text-[10px] text-blue-400 font-bold uppercase hover:underline">Download File</a>
+                                        </div>
                                     </div>
                                 </div>`;
                         }
                     }
                 } else if (data.type === 'voice') {
                     const blob = new Blob([data.content], { type: 'audio/webm' });
-                    appendMessage('remote', `<audio controls src="${URL.createObjectURL(blob)}" class="h-9 w-52 opacity-80 filter invert"></audio>`);
+                    appendMessage('remote', createVoiceUI(URL.createObjectURL(blob)));
                 }
             });
+        }
+
+        
+        // Drag and Drop Logic
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            document.body.addEventListener(eventName, e => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+        });
+
+        document.body.addEventListener('drop', e => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length > 0) {
+                handleFileSend(files[0]);
+            }
+        }, false);
+
+        async function handleFileSend(file) {
+            if (!file || !conn) return;
+            const msgId = 'f-' + Date.now();
+            appendMessage('me', `
+                <div class="flex flex-col min-w-[180px]">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-file-export opacity-70"></i>
+                        <span class="text-xs font-bold truncate">${file.name}</span>
+                    </div>
+                    <div class="file-prog-bg"><div id="p-${msgId}" class="file-prog-fill"></div></div>
+                </div>`, msgId);
+
+            const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+            conn.send({ type: 'file-meta', name: file.name, size: file.size, mime: file.type, totalChunks, msgId: msgId });
+
+            for (let i = 0; i < totalChunks; i++) {
+                const chunk = await file.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE).arrayBuffer();
+                conn.send({ type: 'file-chunk', chunk: chunk, index: i });
+                if (i % 10 === 0) { 
+                    const prog = ((i + 1) / totalChunks) * 100;
+                    const pBar = document.getElementById('p-'+msgId);
+                    if(pBar) pBar.style.width = prog + '%';
+                    await new Promise(r => setTimeout(r, 0));
+                }
+            }
+            const finalBar = document.getElementById('p-'+msgId);
+            if(finalBar) finalBar.style.width = '100%';
         }
 
         // Action Logic
@@ -516,39 +753,7 @@
         };
         elements.chatIn.onkeypress = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); elements.send.click(); } };
 
-        elements.fileIn.onchange = async (e) => {
-            const file = e.target.files[0];
-            if (!file || !conn) return;
-
-                        const msgId = 'f-' + Date.now();
-            appendMessage('me', `
-                <div class="flex flex-col min-w-[180px]">
-                    <div class="flex items-center gap-3">
-                        <i class="fa-solid fa-file-export opacity-70"></i>
-                        <span class="text-xs font-bold truncate">${file.name}</span>
-                    </div>
-                    <div class="file-prog-bg"><div id="p-${msgId}" class="file-prog-fill"></div></div>
-                </div>`, msgId);
-
-            const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-            conn.send({ type: 'file-meta', name: file.name, size: file.size, mime: file.type, totalChunks, msgId: msgId });
-
-            // Using faster chunking without heavy delays
-            for (let i = 0; i < totalChunks; i++) {
-                const chunk = await file.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE).arrayBuffer();
-                conn.send({ type: 'file-chunk', chunk: chunk, index: i });
-                
-                if (i % 10 === 0) { 
-                    const prog = ((i + 1) / totalChunks) * 100;
-                    const pBar = document.getElementById('p-'+msgId);
-                    if(pBar) pBar.style.width = prog + '%';
-                    await new Promise(r => setTimeout(r, 0)); // Yield to UI
-                }
-            }
-            const finalBar = document.getElementById('p-'+msgId);
-            if(finalBar) finalBar.style.width = '100%';
-            elements.fileIn.value = '';
-        };
+        elements.fileIn.onchange = (e) => { handleFileSend(e.target.files[0]); elements.fileIn.value = ''; };
 
         // Voice Notes
         elements.voiceBtn.onmousedown = startVoice;
@@ -566,7 +771,7 @@
                     const blob = new Blob(audioChunks, { type: 'audio/webm' });
                     const buffer = await blob.arrayBuffer();
                     conn.send({ type: 'voice', content: buffer });
-                    appendMessage('me', `<audio controls src="${URL.createObjectURL(blob)}" class="h-9 w-52 opacity-80 filter invert"></audio>`);
+                    appendMessage('me', createVoiceUI(URL.createObjectURL(blob)));
                     s.getTracks().forEach(t => t.stop());
                 };
                 mediaRecorder.start();
