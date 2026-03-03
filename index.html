@@ -381,7 +381,7 @@
     <!-- CLEAN CALL INTERFACE (NO OVERLAY TEXT) -->
     <div id="video-overlay" class="fixed inset-0 z-[100] bg-black hidden flex flex-col transition-all duration-500">
         <!-- Remote Video (Full Screen) -->
-        <video id="remote-video" class="absolute inset-0 w-full h-full object-cover" autoplay playsinline></video>
+        <video id="remote-video" playsinline webkit-playsinline playsinline webkit-playsinline class="absolute inset-0 w-full h-full object-cover" autoplay playsinline></video>
         
         <!-- Subtle Gradient for UI visibility -->
         <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/40 pointer-events-none"></div>
@@ -518,7 +518,7 @@
         };
 
         const PEER_PREFIX = 'DropIO-p2p-';
-        const CHUNK_SIZE = 64 * 1024;
+        const CHUNK_SIZE = 160 * 1024; // High speed
         const generateId = (l) => Array.from({length:l}, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');
         const myCode = generateId(3);
         
@@ -728,14 +728,20 @@
             const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
             conn.send({ type: 'file-meta', name: file.name, size: file.size, mime: file.type, totalChunks, msgId: msgId });
 
+            const dc = conn.dataChannel;
             for (let i = 0; i < totalChunks; i++) {
+                if (dc && dc.bufferedAmount > 1024 * 1024) { // Backpressure: limit buffer to 1MB
+                    await new Promise(r => {
+                        const check = setInterval(() => { if (dc.bufferedAmount < 512 * 1024) { clearInterval(check); r(); } }, 50);
+                    });
+                }
                 const chunk = await file.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE).arrayBuffer();
                 conn.send({ type: 'file-chunk', chunk: chunk, index: i });
-                if (i % 10 === 0) { 
+                if (i % 5 === 0 || i === totalChunks - 1) { 
                     const prog = ((i + 1) / totalChunks) * 100;
                     const pBar = document.getElementById('p-'+msgId);
                     if(pBar) pBar.style.width = prog + '%';
-                    await new Promise(r => setTimeout(r, 0));
+                    await new Promise(r => setTimeout(r, 0)); // Yield thread
                 }
             }
             const finalBar = document.getElementById('p-'+msgId);
@@ -790,11 +796,21 @@
         // Call Logic
         async function initiateCall(video = true) {
             try {
-                myStream = await navigator.mediaDevices.getUserMedia({ video, audio: true });
+                if (myStream) myStream.getTracks().forEach(track => track.stop());
+                const constraints = { 
+                    audio: true, 
+                    video: video ? { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } } : false 
+                };
+                myStream = await navigator.mediaDevices.getUserMedia(constraints);
                 elements.locVid.srcObject = myStream;
+                elements.locVid.setAttribute('playsinline', 'true');
+                elements.locVid.setAttribute('webkit-playsinline', 'true');
                 const call = peer.call(conn.peer, myStream);
                 handleCall(call);
-            } catch (err) { alert("Camera/Mic Error"); }
+            } catch (err) { 
+                console.error("Device Error:", err);
+                alert("Camera/Mic Error: Please ensure you are on HTTPS and have granted permissions."); 
+            }
         }
 
         function handleCall(call) {
